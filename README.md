@@ -1,105 +1,146 @@
+# WIK-DPS-TP02
 
-# DevOps TP - API TypeScript
+##  Objectif
 
-Ce projet est une API simple développée en **TypeScript avec Express**.  
-Elle retourne les **headers de la requête** pour `GET /ping` et répond `404` pour toute autre route.
+Ce projet est la suite du TP01, et vise à **dockeriser l’API Express/TypeScript** développée précédemment, en respectant les bonnes pratiques DevOps.  
+Les consignes imposaient la création **d’images Docker optimisées**, l’utilisation d’un **utilisateur non-root**, et la réalisation d’un **scan de sécurité**.
 
 ---
 
-##  Installation
+##  Structure du projet
 
-### ** Prérequis**
-- **Node.js** (v18 ou plus)
-- **npm** installé
-- **TypeScript** installé (`npm install -g typescript` si besoin)
+- `src/` : Code source TypeScript
+- `dist/` : Code compilé JavaScript (non versionné)
+- `Dockerfile.single` : Image Docker simple en un seul stage
+- `Dockerfile.multi` : Image Docker multi-stage (build + exécution)
+- `.gitignore` / `.dockerignore` : Fichiers d’exclusion
+- `README.md` : Documentation
 
-### ** Installer les dépendances**
-Dans le terminal, exécute :  
+---
+
+##  Dockerfile en un seul stage (`Dockerfile.single`)
+
+Image Docker optimisée :
+
+- Installation uniquement des dépendances de production
+- Utilisation d’un utilisateur non-root (`appuser`)
+- Ordre des instructions pensé pour optimiser le cache Docker
+
+###  Build & Run
+
 ```bash
-npm install
+docker build -f Dockerfile.single -t tp02-single .
+docker run -p 3000:3000 tp02-single
 ```
 
 ---
 
-##  Configuration du port
+##  Dockerfile multi-stage (`Dockerfile.multi`)
 
-L’API écoute par défaut sur le **port 3000**.  
-Tu peux changer le port avec **une variable d’environnement**.
+Image Docker en **deux étapes** :
 
-### **🔹 Option 1 : En ligne de commande**
-Lancer l’API sur le **port 4000** :  
+- **Étape 1 - builder :**
+  - Installation des dépendances complètes
+  - Compilation du code TypeScript (`tsc`)
+- **Étape 2 - runner :**
+  - Seules les dépendances de production + `/dist` sont copiées
+  - Pas de source `.ts` ni de fichiers inutiles
+  - Utilisation d’un utilisateur non-root (`appuser`)
+
+### 🔧 Build & Run
+
 ```bash
-PING_LISTEN_PORT=4000 npx ts-node src/index.ts
+docker build -f Dockerfile.multi -t tp02-multi .
+docker run -p 3000:3000 tp02-multi
 ```
-
-### **🔹 Option 2 : Fichier `.env`**
-1. Créer un fichier `.env` :  
-   ```bash
-   touch .env
-   ```
-2. Ajouter cette ligne dans `.env` :  
-   ```
-   PING_LISTEN_PORT=4000
-   ```
-3. Exécuter l’API :  
-   ```bash
-   npx ts-node src/index.ts
-   ```
 
 ---
 
-##  Lancer l’API
+##  Résultat attendu
 
-### **🔹 Mode développement (exécution directe en TypeScript)**
+### Requête :
+
 ```bash
-npx ts-node src/index.ts
+curl http://localhost:3000/ping
 ```
 
-### **🔹 Mode production (compilation TypeScript → JavaScript)**
-1. Compiler en JavaScript :
-   ```bash
-   npx tsc
-   ```
-2. Exécuter l’API compilée :
-   ```bash
-   node dist/index.js
-   ```
+### Réponse JSON :
 
----
-
-##  Tester l’API
-
-### **Tester avec `curl`**
-#### ➜ Vérifier que `GET /ping` fonctionne :
-```bash
-curl -X GET http://localhost:3000/ping
-```
-**Réponse attendue :**
 ```json
 {
-  "headers": { "host": "localhost:3000", ... }
+  "headers": {
+    "host": "localhost:3000",
+    "user-agent": "curl/7.88.1",
+    "accept": "*/*"
+  }
 }
 ```
 
-#### ➜ Vérifier que les autres routes renvoient `404` :
+---
+
+##  Sécurité : Utilisateur non-root
+
+Les deux images utilisent un utilisateur spécifique pour l'exécution du serveur web :
+
+```dockerfile
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+```
+
+---
+
+##  Scan de sécurité (Trivy)
+
+### Commande utilisée :
+
 ```bash
-curl -X GET http://localhost:3000/autre
+trivy image tp02-multi
 ```
-**Réponse :** Vide avec code **404**.
+
+### Exemple de résultat :
+
+```
+tp02-multi (node:20-alpine)
+Total: 0 Critical, 0 High, 2 Medium, 1 Low
+```
+
+> Le scan peut également être fait avec `docker scan` ou `clair`.
 
 ---
 
-## 📜 Structure du projet
+## ⚙ Commandes utiles
 
+### Compilation TypeScript
+
+```bash
+npm install
+npx tsc
 ```
-📂 devops-tp
- ├── 📂 src
- │   ├── index.ts        # Fichier principal de l'API
- ├── 📂 dist             # Fichiers compilés après `tsc`
- ├── .env                # (Optionnel) Fichier de configuration du port
- ├── package.json        # Dépendances et scripts
- ├── tsconfig.json       # Configuration TypeScript
- ├── README.md           # Documentation du projet
+
+### Exécution locale (hors Docker)
+
+```bash
+npm run start
 ```
 
 ---
+
+##  Variable d’environnement
+
+L'application utilise une variable pour définir le port d’écoute :
+
+```env
+PING_LISTEN_PORT=3000
+```
+
+Si elle n’est pas définie, le port 3000 est utilisé par défaut.
+
+---
+
+##  Rendu
+
+-  Dépôt GitHub : [https://github.com/Thibautdbr33/WIK-DPS-TP02](https://github.com/Thibautdbr33/WIK-DPS-TP02)
+-  Lien envoyé par mail avec objet : **WIK-DPS-TP02**
+
+---
+
