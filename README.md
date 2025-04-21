@@ -108,7 +108,7 @@ Total: 0 Critical, 0 High, 2 Medium, 1 Low
 
 ---
 
-## ⚙ Commandes utiles
+## Commandes utiles
 
 ### Compilation TypeScript
 
