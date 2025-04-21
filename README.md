@@ -47,7 +47,7 @@ Image Docker en **deux étapes** :
   - Pas de source `.ts` ni de fichiers inutiles
   - Utilisation d’un utilisateur non-root (`appuser`)
 
-### 🔧 Build & Run
+### Build & Run
 
 ```bash
 docker build -f Dockerfile.multi -t tp02-multi .
