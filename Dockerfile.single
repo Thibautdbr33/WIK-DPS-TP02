@@ -1,0 +1,21 @@
+# Dockerfile.single
+
+FROM node:20-alpine
+
+# Crée un utilisateur non-root pour l'exécution
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+# Copie les fichiers nécessaires en premier pour optimiser le cache
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copie le code source (génère plus tard le dossier dist avec `tsc`)
+COPY . .
+
+# Change l'utilisateur pour l'exécution
+USER appuser
+
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
